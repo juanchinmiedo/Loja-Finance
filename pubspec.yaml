@@ -1,0 +1,43 @@
+name: financas_hub_app
+description: "App de finanzas para agenda-loja"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Firebase
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
+  cloud_firestore: ^5.4.4
+  google_sign_in: ^6.2.1
+
+  # UI
+  google_fonts: ^6.2.1
+  fl_chart: ^0.68.0
+  provider: ^6.1.2
+
+  # i18n
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  intl_utils: ^2.8.7
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
+
+flutter_intl:
+  enabled: true
+  arb_dir: lib/l10n
+  output_dir: lib/generated/intl

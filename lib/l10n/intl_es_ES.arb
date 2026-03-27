@@ -1,0 +1,122 @@
+{
+  "@@locale": "es_ES",
+
+  "appTitle": "Finanzas",
+  "@appTitle": { "description": "App title" },
+
+  "loginSubtitle": "agenda-loja · solo propietarios",
+  "@loginSubtitle": {},
+
+  "loginButton": "Continuar con Google",
+  "@loginButton": {},
+
+  "loginFooter": "Acceso restringido · solo administradores",
+  "@loginFooter": {},
+
+  "loginErrorUnauthorized": "No autorizado para este acceso",
+  "@loginErrorUnauthorized": {},
+
+  "loginErrorGeneric": "Error de autenticación ({code})",
+  "@loginErrorGeneric": {
+    "placeholders": { "code": { "type": "String" } }
+  },
+
+  "loginErrorNetwork": "Sin conexión a internet",
+  "@loginErrorNetwork": {},
+
+  "loginVerifying": "Verificando...",
+  "@loginVerifying": {},
+
+  "miniCardMonth": "este mes",
+  "@miniCardMonth": {},
+
+  "miniCardRevenue": "ingresos",
+  "@miniCardRevenue": {},
+
+  "miniCardOccupancy": "ocupación",
+  "@miniCardOccupancy": {},
+
+  "navDashboard": "Inicio",
+  "@navDashboard": {},
+
+  "navWorkers": "Workers",
+  "@navWorkers": {},
+
+  "navServices": "Servicios",
+  "@navServices": {},
+
+  "periodWeek": "Semana",
+  "@periodWeek": {},
+
+  "periodMonth": "Mes",
+  "@periodMonth": {},
+
+  "periodYear": "Año",
+  "@periodYear": {},
+
+  "periodCustom": "Personalizado",
+  "@periodCustom": {},
+
+  "kpiGrossRevenue": "Ingresos brutos",
+  "@kpiGrossRevenue": {},
+
+  "kpiNetRevenue": "Beneficio neto",
+  "@kpiNetRevenue": {},
+
+  "kpiAvgTicket": "Ticket medio",
+  "@kpiAvgTicket": {},
+
+  "kpiCompletedAppointments": "Citas completadas",
+  "@kpiCompletedAppointments": {},
+
+  "kpiCancelledAppointments": "Canceladas",
+  "@kpiCancelledAppointments": {},
+
+  "kpiOccupancyRate": "Ocupación",
+  "@kpiOccupancyRate": {},
+
+  "workerRanking": "Ranking de workers",
+  "@workerRanking": {},
+
+  "workerRevenue": "Ingresos",
+  "@workerRevenue": {},
+
+  "workerAppointments": "Citas",
+  "@workerAppointments": {},
+
+  "workerShare": "% del total",
+  "@workerShare": {},
+
+  "workerTopServices": "Top servicios",
+  "@workerTopServices": {},
+
+  "serviceMargin": "Margen",
+  "@serviceMargin": {},
+
+  "serviceCost": "Coste material",
+  "@serviceCost": {},
+
+  "serviceBasePrice": "Precio base",
+  "@serviceBasePrice": {},
+
+  "serviceTimesPerformed": "Veces realizados",
+  "@serviceTimesPerformed": {},
+
+  "serviceProfitability": "Rentabilidad",
+  "@serviceProfitability": {},
+
+  "editCost": "Editar coste",
+  "@editCost": {},
+
+  "saveCost": "Guardar",
+  "@saveCost": {},
+
+  "noData": "Sin datos para este período",
+  "@noData": {},
+
+  "loading": "Cargando...",
+  "@loading": {},
+
+  "signOut": "Cerrar sesión",
+  "@signOut": {}
+}
