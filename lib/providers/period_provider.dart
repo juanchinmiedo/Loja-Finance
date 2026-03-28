@@ -13,6 +13,7 @@ class PeriodProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void selectDay()   => select(Period.today());
   void selectWeek()  => select(Period.thisWeek());
   void selectMonth() => select(Period.thisMonth());
   void selectYear()  => select(Period.thisYear());

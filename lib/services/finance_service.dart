@@ -1,8 +1,4 @@
 // lib/services/finance_service.dart
-//
-// Todas las queries financieras a Firestore.
-// Precio real = finalPrice ?? basePrice.
-// Solo se cuentan ingresos de citas con status 'done' o 'scheduled'.
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/kpi_data.dart';
@@ -14,18 +10,14 @@ class FinanceService {
 
   final FirebaseFirestore _db;
 
-  // ── Precio efectivo de un documento ───────────────────────────────────────
-
   double _price(Map<String, dynamic> data) {
     final fp = data['finalPrice'];
     final bp = data['basePrice'] ?? data['total'] ?? 0;
     return ((fp ?? bp) as num).toDouble();
   }
 
-  bool _countsAsRevenue(String status) =>
-      status == 'done' || status == 'scheduled';
-
-  // ── Query base para un período ─────────────────────────────────────────────
+  bool _countsAsRevenue(String status)   => status == 'done' || status == 'scheduled';
+  bool _countsAsCompleted(String status) => status == 'done' || status == 'scheduled';
 
   Future<List<Map<String, dynamic>>> _fetchPeriod(
     Period period, {
@@ -33,26 +25,21 @@ class FinanceService {
   }) async {
     Query q = _db
         .collection('appointments')
-        .where('appointmentDate',
-            isGreaterThanOrEqualTo: period.fromTimestamp)
+        .where('appointmentDate', isGreaterThanOrEqualTo: period.fromTimestamp)
         .where('appointmentDate', isLessThan: period.toTimestamp);
 
-    if (workerId != null) {
-      q = q.where('workerId', isEqualTo: workerId);
-    }
+    if (workerId != null) q = q.where('workerId', isEqualTo: workerId);
 
     final snap = await q.get();
-    return snap.docs
-        .map((d) => d.data() as Map<String, dynamic>)
-        .toList();
+    return snap.docs.map((d) => d.data() as Map<String, dynamic>).toList();
   }
 
-  // ── KPI summary para un período ────────────────────────────────────────────
+  // ── KPI summary ────────────────────────────────────────────────────────────
 
   Future<KpiSummary> fetchKpiSummary(
     Period period, {
-    String? workerId,     // null = todos los workers (admin)
-    double materialCost = 0, // coste total de materiales del período
+    String? workerId,
+    double materialCost = 0,
   }) async {
     final docs     = await _fetchPeriod(period, workerId: workerId);
     final prevDocs = await _fetchPeriod(period.previous, workerId: workerId);
@@ -65,10 +52,10 @@ class FinanceService {
 
     for (final d in docs) {
       final status = (d['status'] ?? '').toString();
-      if (_countsAsRevenue(status)) grossRevenue += _price(d);
-      if (status == 'done')      completed++;
-      if (status == 'cancelled') cancelled++;
-      if (status == 'noShow')    noShow++;
+      if (_countsAsRevenue(status))   grossRevenue += _price(d);
+      if (_countsAsCompleted(status)) completed++;
+      if (status == 'cancelled')      cancelled++;
+      if (status == 'noShow')         noShow++;
     }
 
     for (final d in prevDocs) {
@@ -91,104 +78,121 @@ class FinanceService {
     );
   }
 
-  // ── Gráfica: ingresos de los últimos 12 meses ─────────────────────────────
+  // ── Gráfica adaptativa ─────────────────────────────────────────────────────
 
-  Future<List<RevenuePoint>> fetchLast12Months({String? workerId}) async {
-    final months = Period.last12Months();
+  Future<List<RevenuePoint>> fetchChartPoints(
+    Period activePeriod, {
+    String? workerId,
+  }) async {
+    List<Period> buckets = activePeriod.chartBuckets();
 
-    // Una sola query grande para los 12 meses
-    final from = months.first.fromTimestamp;
-    final to   = months.last.toTimestamp;
+    if (activePeriod.type == PeriodType.year) {
+      final yearAgo    = DateTime(DateTime.now().year - 1, 1, 1);
+      final checkSnap  = await _db
+          .collection('appointments')
+          .where('appointmentDate', isLessThan: Timestamp.fromDate(yearAgo))
+          .limit(1)
+          .get();
+      if (checkSnap.docs.isEmpty) {
+        buckets = Period.last12Months();
+      }
+    }
+
+    final from = buckets.first.fromTimestamp;
+    final to   = buckets.last.toTimestamp;
 
     Query q = _db
         .collection('appointments')
         .where('appointmentDate', isGreaterThanOrEqualTo: from)
         .where('appointmentDate', isLessThan: to);
 
-    if (workerId != null) {
-      q = q.where('workerId', isEqualTo: workerId);
-    }
+    if (workerId != null) q = q.where('workerId', isEqualTo: workerId);
 
     final snap = await q.get();
-    final docs  = snap.docs.map((d) => d.data() as Map<String, dynamic>).toList();
+    final docs = snap.docs.map((d) => d.data() as Map<String, dynamic>).toList();
 
-    // Agrupa por mes
-    final Map<String, double> byMonth = {};
-    for (final m in months) {
-      final key = '${m.from.year}-${m.from.month.toString().padLeft(2, '0')}';
-      byMonth[key] = 0;
-    }
+    String bucketKey(Period b) =>
+        '${b.from.year}-${b.from.month.toString().padLeft(2, '0')}-${b.from.day.toString().padLeft(2, '0')}';
+
+    final Map<String, double> byBucket = {
+      for (final b in buckets) bucketKey(b): 0.0,
+    };
 
     for (final d in docs) {
       final status = (d['status'] ?? '').toString();
       if (!_countsAsRevenue(status)) continue;
-
       final ts = d['appointmentDate'];
       if (ts is! Timestamp) continue;
-      final dt  = ts.toDate();
-      final key = '${dt.year}-${dt.month.toString().padLeft(2, '0')}';
-      byMonth[key] = (byMonth[key] ?? 0) + _price(d);
+      final dt = ts.toDate();
+      for (final b in buckets) {
+        if (!dt.isBefore(b.from) && dt.isBefore(b.to)) {
+          final key = bucketKey(b);
+          byBucket[key] = (byBucket[key] ?? 0) + _price(d);
+          break;
+        }
+      }
     }
 
-    return months.map((m) {
-      final key = '${m.from.year}-${m.from.month.toString().padLeft(2, '0')}';
-      return RevenuePoint(month: m.from, revenue: byMonth[key] ?? 0);
-    }).toList();
+    return buckets.map((b) => RevenuePoint(
+      month:   b.from,
+      revenue: byBucket[bucketKey(b)] ?? 0,
+    )).toList();
   }
 
-  // ── Ingresos totales históricos por worker ─────────────────────────────────
+  // Alias para worker_service (sigue usando last12Months)
+  Future<List<RevenuePoint>> fetchLast12Months({String? workerId}) =>
+      fetchChartPoints(Period.thisMonth(), workerId: workerId);
+
+  // ── Ingresos por worker ────────────────────────────────────────────────────
 
   Future<Map<String, double>> fetchRevenueByWorker(Period period) async {
     final docs = await _fetchPeriod(period);
     final Map<String, double> result = {};
-
     for (final d in docs) {
-      final status   = (d['status'] ?? '').toString();
+      final status = (d['status'] ?? '').toString();
       if (!_countsAsRevenue(status)) continue;
       final worker = (d['workerId'] ?? 'unknown').toString();
       result[worker] = (result[worker] ?? 0) + _price(d);
     }
-
     return result;
   }
 
-  // ── Top servicios por frecuencia e ingresos ────────────────────────────────
+  // ── Top servicios ──────────────────────────────────────────────────────────
 
-  Future<List<_ServiceAgg>> fetchTopServices(
+  Future<List<ServiceAgg>> fetchTopServices(
     Period period, {
     String? workerId,
     int limit = 8,
   }) async {
     final docs = await _fetchPeriod(period, workerId: workerId);
-    final Map<String, _ServiceAgg> agg = {};
+    final Map<String, ServiceAgg> agg = {};
 
     for (final d in docs) {
       final status = (d['status'] ?? '').toString();
       if (!_countsAsRevenue(status)) continue;
-
       final id   = (d['serviceId']   ?? d['serviceNameKey'] ?? 'unknown').toString();
       final name = (d['serviceName'] ?? id).toString();
-
-      agg[id] = _ServiceAgg(
-        id:       id,
-        name:     name,
-        count:    (agg[id]?.count    ?? 0) + 1,
-        revenue:  (agg[id]?.revenue  ?? 0) + _price(d),
+      agg[id] = ServiceAgg(
+        id:      id,
+        name:    name,
+        count:   (agg[id]?.count   ?? 0) + 1,
+        revenue: (agg[id]?.revenue ?? 0) + _price(d),
       );
     }
 
-    final list = agg.values.toList()
-      ..sort((a, b) => b.revenue.compareTo(a.revenue));
-    return list.take(limit).toList();
+    return (agg.values.toList()..sort((a, b) => b.revenue.compareTo(a.revenue)))
+        .take(limit)
+        .toList();
   }
 }
 
-class _ServiceAgg {
+// Ahora público para que home_screen pueda usar el tipo
+class ServiceAgg {
   final String id;
   final String name;
   final int    count;
   final double revenue;
-  const _ServiceAgg({
+  const ServiceAgg({
     required this.id,
     required this.name,
     required this.count,

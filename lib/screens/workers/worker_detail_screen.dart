@@ -7,7 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/worker_stats.dart';
-import '../../models/kpi_data.dart';
+
 import '../../providers/period_provider.dart';
 import '../../services/worker_service.dart';
 import '../../widgets/kpi_card.dart';
@@ -196,7 +196,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
         .map((e) => FlSpot(e.key.toDouble(), e.value.revenue))
         .toList();
 
-    final maxY = pts.map((p) => p.revenue).reduce((a, b) => a > b ? a : b);
+    final maxY = pts.fold<double>(0, (a, b) => a > b.revenue ? a : b.revenue);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(8, 20, 16, 8),

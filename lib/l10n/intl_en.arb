@@ -15,6 +15,7 @@
   "navDashboard": "Home",
   "navWorkers": "Workers",
   "navServices": "Services",
+  "periodDay": "Day",
   "periodWeek": "Week",
   "periodMonth": "Month",
   "periodYear": "Year",

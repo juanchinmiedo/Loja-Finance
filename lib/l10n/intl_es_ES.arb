@@ -45,6 +45,9 @@
   "navServices": "Servicios",
   "@navServices": {},
 
+  "periodDay": "Día",
+  "@periodDay": {},
+
   "periodWeek": "Semana",
   "@periodWeek": {},
 
