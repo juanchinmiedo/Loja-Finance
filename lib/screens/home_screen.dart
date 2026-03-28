@@ -1,4 +1,6 @@
 // lib/screens/home_screen.dart
+// COMMIT 1 — Base selector: Total salón / workers como fuente de KPIs y línea principal
+//            El comparador debajo de la gráfica sigue igual para líneas adicionales
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -35,7 +37,6 @@ class HomeScreen extends StatelessWidget {
 class _HomeShell extends StatefulWidget {
   const _HomeShell({required this.user});
   final User user;
-
   @override
   State<_HomeShell> createState() => _HomeShellState();
 }
@@ -46,11 +47,7 @@ class _HomeShellState extends State<_HomeShell> {
   @override
   Widget build(BuildContext context) {
     final l10n    = S.of(context);
-    final screens = [
-      const _DashboardTab(),
-      const WorkersScreen(),
-      const ServicesScreen(),
-    ];
+    final screens = [const _DashboardTab(), const WorkersScreen(), const ServicesScreen()];
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
@@ -62,28 +59,22 @@ class _HomeShellState extends State<_HomeShell> {
 
   PreferredSizeWidget _buildAppBar(BuildContext context, S l10n) {
     return AppBar(
-      backgroundColor:        Colors.white,
-      elevation:              0,
-      scrolledUnderElevation: 1,
+      backgroundColor: Colors.white, elevation: 0, scrolledUnderElevation: 1,
       title: Row(
         children: [
           Container(
             width: 28, height: 28,
             decoration: BoxDecoration(
-              color:        Colors.white,
+              color: Colors.white,
               borderRadius: BorderRadius.circular(7),
-              border:       Border.all(color: const Color(0xFFE8EAED)),
+              border: Border.all(color: const Color(0xFFE8EAED)),
             ),
             child: const _MiniLogo(),
           ),
           const SizedBox(width: 10),
-          Text(
-            l10n.appTitle,
-            style: GoogleFonts.nunito(
-              fontSize: 18, fontWeight: FontWeight.w600,
-              color: const Color(0xFF202124),
-            ),
-          ),
+          Text(l10n.appTitle,
+              style: GoogleFonts.nunito(
+                  fontSize: 18, fontWeight: FontWeight.w600, color: const Color(0xFF202124))),
         ],
       ),
       actions: [
@@ -92,19 +83,13 @@ class _HomeShellState extends State<_HomeShell> {
           child: GestureDetector(
             onTap: () => _showSignOutDialog(context, l10n),
             child: CircleAvatar(
-              radius:          16,
-              backgroundColor: const Color(0xFF4285F4),
-              backgroundImage: widget.user.photoURL != null
-                  ? NetworkImage(widget.user.photoURL!)
-                  : null,
+              radius: 16, backgroundColor: const Color(0xFF4285F4),
+              backgroundImage:
+                  widget.user.photoURL != null ? NetworkImage(widget.user.photoURL!) : null,
               child: widget.user.photoURL == null
-                  ? Text(
-                      (widget.user.displayName ?? 'U')[0].toUpperCase(),
+                  ? Text((widget.user.displayName ?? 'U')[0].toUpperCase(),
                       style: const TextStyle(
-                        color: Colors.white, fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    )
+                          color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600))
                   : null,
             ),
           ),
@@ -115,27 +100,24 @@ class _HomeShellState extends State<_HomeShell> {
 
   NavigationBar _buildBottomNav(BuildContext context, S l10n) {
     return NavigationBar(
-      backgroundColor:       Colors.white,
-      indicatorColor:        const Color(0xFFE8F0FE),
-      selectedIndex:         _tab,
+      backgroundColor: Colors.white,
+      indicatorColor:  const Color(0xFFE8F0FE),
+      selectedIndex:   _tab,
       onDestinationSelected: (i) => setState(() => _tab = i),
       labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
       destinations: [
         NavigationDestination(
-          icon:         const Icon(Icons.bar_chart_outlined),
-          selectedIcon: const Icon(Icons.bar_chart, color: Color(0xFF4285F4)),
-          label:        l10n.navDashboard,
-        ),
+            icon: const Icon(Icons.bar_chart_outlined),
+            selectedIcon: const Icon(Icons.bar_chart, color: Color(0xFF4285F4)),
+            label: l10n.navDashboard),
         NavigationDestination(
-          icon:         const Icon(Icons.people_outline),
-          selectedIcon: const Icon(Icons.people, color: Color(0xFF4285F4)),
-          label:        l10n.navWorkers,
-        ),
+            icon: const Icon(Icons.people_outline),
+            selectedIcon: const Icon(Icons.people, color: Color(0xFF4285F4)),
+            label: l10n.navWorkers),
         NavigationDestination(
-          icon:         const Icon(Icons.spa_outlined),
-          selectedIcon: const Icon(Icons.spa, color: Color(0xFF4285F4)),
-          label:        l10n.navServices,
-        ),
+            icon: const Icon(Icons.spa_outlined),
+            selectedIcon: const Icon(Icons.spa, color: Color(0xFF4285F4)),
+            label: l10n.navServices),
       ],
     );
   }
@@ -148,13 +130,12 @@ class _HomeShellState extends State<_HomeShell> {
         content: Text('¿Cerrar sesión de ${widget.user.email}?', style: GoogleFonts.nunito()),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar')),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.signOut, style: const TextStyle(color: Color(0xFFEA4335))),
-          ),
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(l10n.signOut,
+                  style: const TextStyle(color: Color(0xFFEA4335)))),
         ],
       ),
     );
@@ -168,7 +149,6 @@ class _HomeShellState extends State<_HomeShell> {
 
 class _DashboardTab extends StatefulWidget {
   const _DashboardTab();
-
   @override
   State<_DashboardTab> createState() => _DashboardTabState();
 }
@@ -177,12 +157,19 @@ class _DashboardTabState extends State<_DashboardTab> {
   final _financeService = FinanceService();
   final _workerService  = WorkerService();
 
+  // ── Estado del selector de base ───────────────────────────────────────────
+  // null = Total salón, String = workerId seleccionado
+  String? _baseWorkerId;
+
+  // KPIs y puntos de la base seleccionada
   KpiSummary?         _kpi;
   List<RevenuePoint>? _chartPoints;
   bool _kpiLoading   = true;
   bool _chartLoading = true;
 
+  // Lista de workers para el selector de base
   List<CompareOption> _workerOptions  = [];
+  // Lista de servicios para el comparador
   List<CompareOption> _serviceOptions = [];
 
   Period? _lastPeriod;
@@ -202,22 +189,26 @@ class _DashboardTabState extends State<_DashboardTab> {
 
   Future<void> _loadData(Period period) async {
     setState(() { _kpiLoading = true; _chartLoading = true; });
+    await Future.wait([
+      _loadKpiAndChart(period),
+      _loadCompareOptions(period),
+    ]);
+  }
 
+  Future<void> _loadKpiAndChart(Period period) async {
     try {
-      final kpi = await _financeService.fetchKpiSummary(period);
+      final kpi = await _financeService.fetchKpiSummary(period, workerId: _baseWorkerId);
       if (mounted) setState(() { _kpi = kpi; _kpiLoading = false; });
     } catch (_) {
       if (mounted) setState(() => _kpiLoading = false);
     }
 
     try {
-      final pts = await _financeService.fetchChartPoints(period);
+      final pts = await _financeService.fetchChartPoints(period, workerId: _baseWorkerId);
       if (mounted) setState(() { _chartPoints = pts; _chartLoading = false; });
     } catch (_) {
       if (mounted) setState(() => _chartLoading = false);
     }
-
-    _loadCompareOptions(period);
   }
 
   Future<void> _loadCompareOptions(Period period) async {
@@ -244,17 +235,26 @@ class _DashboardTabState extends State<_DashboardTab> {
     } catch (_) {}
   }
 
-  Future<List<RevenuePoint>> _fetchSeries(String id, String type) {
+  // Cambia la base: null = salón, workerId = worker concreto
+  Future<void> _selectBase(String? workerId) async {
+    if (_baseWorkerId == workerId) return;
+    setState(() {
+      _baseWorkerId  = workerId;
+      _kpiLoading    = true;
+      _chartLoading  = true;
+    });
+    await _loadKpiAndChart(_lastPeriod!);
+  }
+
+  // Callbacks para el comparador (líneas adicionales)
+  Future<List<RevenuePoint>> _fetchCompareSeries(String id, String type) {
     final period = context.read<PeriodProvider>().current;
-    if (type == 'worker') {
-      return _financeService.fetchChartPoints(period, workerId: id);
-    }
-    // Para servicios: misma query general (puedes filtrar por serviceId en el futuro)
+    if (type == 'worker') return _financeService.fetchChartPoints(period, workerId: id);
     return _financeService.fetchChartPoints(period);
   }
 
   Future<List<RevenuePoint>> _fetchPeriodSeries(Period period) =>
-      _financeService.fetchChartPoints(period);
+      _financeService.fetchChartPoints(period, workerId: _baseWorkerId);
 
   @override
   Widget build(BuildContext context) {
@@ -264,7 +264,7 @@ class _DashboardTabState extends State<_DashboardTab> {
     return RefreshIndicator(
       color:     const Color(0xFF4285F4),
       onRefresh: () async {
-        _chartPoints    = null;
+        _chartPoints = null;
         _workerOptions  = [];
         _serviceOptions = [];
         await _loadData(context.read<PeriodProvider>().current);
@@ -273,17 +273,23 @@ class _DashboardTabState extends State<_DashboardTab> {
         padding: const EdgeInsets.only(bottom: 24),
         children: [
           const SizedBox(height: 16),
+
+          // ── Period selector ────────────────────────────────────────────────
           const PeriodSelector(),
+          const SizedBox(height: 12),
+
+          // ── Base selector: Total salón + workers ───────────────────────────
+          _buildBaseSelector(),
           const SizedBox(height: 20),
 
+          // ── KPI cards ──────────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _kpiLoading
-                ? const _KpiSkeleton()
-                : _buildKpiGrid(l10n),
+            child: _kpiLoading ? const _KpiSkeleton() : _buildKpiGrid(l10n),
           ),
           const SizedBox(height: 20),
 
+          // ── Gráfica + comparador ───────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
@@ -292,18 +298,20 @@ class _DashboardTabState extends State<_DashboardTab> {
                 Text(
                   _chartTitle(period.type),
                   style: GoogleFonts.nunito(
-                    fontSize: 14, fontWeight: FontWeight.w600,
-                    color: const Color(0xFF202124),
-                  ),
+                      fontSize: 14, fontWeight: FontWeight.w600,
+                      color: const Color(0xFF202124)),
                 ),
                 const SizedBox(height: 10),
                 RevenueChart(
                   points:              _chartPoints ?? [],
                   isLoading:           _chartLoading,
                   activePeriod:        period,
-                  workerOptions:       _workerOptions,
+                  // El comparador no incluye el worker base (ya es la línea principal)
+                  workerOptions:       _workerOptions
+                      .where((w) => w.id != _baseWorkerId)
+                      .toList(),
                   serviceOptions:      _serviceOptions,
-                  onFetchSeries:       _fetchSeries,
+                  onFetchSeries:       _fetchCompareSeries,
                   onFetchPeriodSeries: _fetchPeriodSeries,
                 ),
               ],
@@ -314,14 +322,57 @@ class _DashboardTabState extends State<_DashboardTab> {
     );
   }
 
+  // ── Base selector widget ──────────────────────────────────────────────────
+
+  Widget _buildBaseSelector() {
+    if (_workerOptions.isEmpty) return const SizedBox.shrink();
+
+    return SizedBox(
+      height: 36,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        children: [
+          // Chip "Total salón" (siempre primero)
+          _BaseChip(
+            label:    'Total salón',
+            isActive: _baseWorkerId == null,
+            color:    const Color(0xFF4285F4),
+            onTap:    () => _selectBase(null),
+          ),
+          const SizedBox(width: 8),
+          // Un chip por worker
+          ..._workerOptions.map((w) => Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: _BaseChip(
+              label:    w.label,
+              isActive: _baseWorkerId == w.id,
+              color:    const Color(0xFF4285F4),
+              onTap:    () => _selectBase(w.id),
+            ),
+          )),
+        ],
+      ),
+    );
+  }
+
+  // ── Chart title ───────────────────────────────────────────────────────────
+
   String _chartTitle(PeriodType type) {
+    final base = _baseWorkerId == null
+        ? 'salón'
+        : (_workerOptions.firstWhere((w) => w.id == _baseWorkerId,
+                orElse: () => const CompareOption(id: '', label: 'worker'))
+            .label);
     switch (type) {
-      case PeriodType.day:    return 'Ingresos últimos 12 días';
-      case PeriodType.week:   return 'Ingresos últimas 12 semanas';
-      case PeriodType.year:   return 'Ingresos últimos 12 años';
-      default:                return 'Ingresos últimos 12 meses';
+      case PeriodType.day:   return 'Últimos 12 días — $base';
+      case PeriodType.week:  return 'Últimas 12 semanas — $base';
+      case PeriodType.year:  return 'Últimos 12 años — $base';
+      default:               return 'Últimos 12 meses — $base';
     }
   }
+
+  // ── KPI grid ──────────────────────────────────────────────────────────────
 
   Widget _buildKpiGrid(S l10n) {
     final kpi = _kpi ?? KpiSummary.empty();
@@ -329,53 +380,93 @@ class _DashboardTabState extends State<_DashboardTab> {
       children: [
         Row(children: [
           Expanded(child: KpiCard(
-            label: l10n.kpiGrossRevenue,
-            value: '€${kpi.grossRevenue.toStringAsFixed(0)}',
-            changePercent: kpi.revenueChangePercent,
-            icon: Icons.euro_rounded,
-            accentColor: const Color(0xFF4285F4),
-          )),
+              label: l10n.kpiGrossRevenue,
+              value: '€${kpi.grossRevenue.toStringAsFixed(0)}',
+              changePercent: kpi.revenueChangePercent,
+              icon: Icons.euro_rounded,
+              accentColor: const Color(0xFF4285F4))),
           const SizedBox(width: 12),
           Expanded(child: KpiCard(
-            label: l10n.kpiNetRevenue,
-            value: '€${kpi.netRevenue.toStringAsFixed(0)}',
-            icon: Icons.account_balance_wallet_outlined,
-            accentColor: const Color(0xFF34A853),
-          )),
+              label: l10n.kpiNetRevenue,
+              value: '€${kpi.netRevenue.toStringAsFixed(0)}',
+              icon: Icons.account_balance_wallet_outlined,
+              accentColor: const Color(0xFF34A853))),
         ]),
         const SizedBox(height: 12),
         Row(children: [
           Expanded(child: KpiCard(
-            label: l10n.kpiAvgTicket,
-            value: '€${kpi.avgTicket.toStringAsFixed(0)}',
-            icon: Icons.receipt_outlined,
-            accentColor: const Color(0xFFFBBC04),
-          )),
+              label: l10n.kpiAvgTicket,
+              value: '€${kpi.avgTicket.toStringAsFixed(0)}',
+              icon: Icons.receipt_outlined,
+              accentColor: const Color(0xFFFBBC04))),
           const SizedBox(width: 12),
           Expanded(child: KpiCard(
-            label: l10n.kpiOccupancyRate,
-            value: '${kpi.occupancyRate.toStringAsFixed(1)}%',
-            icon: Icons.calendar_today_outlined,
-            accentColor: const Color(0xFF4285F4),
-          )),
+              label: l10n.kpiOccupancyRate,
+              value: '${kpi.occupancyRate.toStringAsFixed(1)}%',
+              icon: Icons.calendar_today_outlined,
+              accentColor: const Color(0xFF4285F4))),
         ]),
         const SizedBox(height: 12),
         Row(children: [
           Expanded(child: KpiCard(
-            label: l10n.kpiCompletedAppointments,
-            value: '${kpi.completedCount}',
-            icon: Icons.check_circle_outline,
-            accentColor: const Color(0xFF34A853),
-          )),
+              label: l10n.kpiCompletedAppointments,
+              value: '${kpi.completedCount}',
+              icon: Icons.check_circle_outline,
+              accentColor: const Color(0xFF34A853))),
           const SizedBox(width: 12),
           Expanded(child: KpiCard(
-            label: l10n.kpiCancelledAppointments,
-            value: '${kpi.cancelledCount + kpi.noShowCount}',
-            icon: Icons.cancel_outlined,
-            accentColor: const Color(0xFFEA4335),
-          )),
+              label: l10n.kpiCancelledAppointments,
+              value: '${kpi.cancelledCount + kpi.noShowCount}',
+              icon: Icons.cancel_outlined,
+              accentColor: const Color(0xFFEA4335))),
         ]),
       ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Base selector chip — estilo distinto al comparador:
+//  activo = fondo azul sólido, inactivo = pill gris outline
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _BaseChip extends StatelessWidget {
+  const _BaseChip({
+    required this.label,
+    required this.isActive,
+    required this.color,
+    required this.onTap,
+  });
+
+  final String     label;
+  final bool       isActive;
+  final Color      color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: isActive ? color : Colors.transparent,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isActive ? color : const Color(0xFFDADCE0),
+            width: isActive ? 0 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.nunito(
+            fontSize:   13,
+            fontWeight: FontWeight.w600,
+            color:      isActive ? Colors.white : const Color(0xFF5F6368),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -386,7 +477,6 @@ class _DashboardTabState extends State<_DashboardTab> {
 
 class _KpiSkeleton extends StatelessWidget {
   const _KpiSkeleton();
-
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -405,17 +495,13 @@ class _KpiSkeleton extends StatelessWidget {
 class _SkeletonBox extends StatelessWidget {
   const _SkeletonBox({required this.height});
   final double height;
-
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: height,
-      decoration: BoxDecoration(
+  Widget build(BuildContext context) => Container(
+    height: height,
+    decoration: BoxDecoration(
         color: const Color(0xFFF1F3F4),
-        borderRadius: BorderRadius.circular(12),
-      ),
-    );
-  }
+        borderRadius: BorderRadius.circular(12)),
+  );
 }
 
 class _MiniLogo extends StatelessWidget {
