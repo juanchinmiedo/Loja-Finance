@@ -1,4 +1,5 @@
 // lib/services/finance_service.dart
+// COMMIT 2 — fetchChartPoints accepts serviceId for service comparator
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/kpi_data.dart';
@@ -22,16 +23,27 @@ class FinanceService {
   Future<List<Map<String, dynamic>>> _fetchPeriod(
     Period period, {
     String? workerId,
+    String? serviceId, // FIX: filter by serviceId for service comparator
   }) async {
     Query q = _db
         .collection('appointments')
         .where('appointmentDate', isGreaterThanOrEqualTo: period.fromTimestamp)
         .where('appointmentDate', isLessThan: period.toTimestamp);
 
-    if (workerId != null) q = q.where('workerId', isEqualTo: workerId);
+    if (workerId  != null) q = q.where('workerId',  isEqualTo: workerId);
+    // NOTE: serviceId filter done in-memory (no compound index needed)
 
     final snap = await q.get();
-    return snap.docs.map((d) => d.data() as Map<String, dynamic>).toList();
+    var docs = snap.docs.map((d) => d.data() as Map<String, dynamic>).toList();
+
+    if (serviceId != null) {
+      docs = docs.where((d) {
+        final sid = (d['serviceId'] ?? d['serviceNameKey'] ?? '').toString();
+        return sid == serviceId;
+      }).toList();
+    }
+
+    return docs;
   }
 
   // ── KPI summary ────────────────────────────────────────────────────────────
@@ -83,6 +95,7 @@ class FinanceService {
   Future<List<RevenuePoint>> fetchChartPoints(
     Period activePeriod, {
     String? workerId,
+    String? serviceId, // FIX: filter chart points by service
   }) async {
     List<Period> buckets = activePeriod.chartBuckets();
 
@@ -101,15 +114,12 @@ class FinanceService {
     final from = buckets.first.fromTimestamp;
     final to   = buckets.last.toTimestamp;
 
-    Query q = _db
-        .collection('appointments')
-        .where('appointmentDate', isGreaterThanOrEqualTo: from)
-        .where('appointmentDate', isLessThan: to);
-
-    if (workerId != null) q = q.where('workerId', isEqualTo: workerId);
-
-    final snap = await q.get();
-    final docs = snap.docs.map((d) => d.data() as Map<String, dynamic>).toList();
+    final allDocs = await _fetchPeriod(
+      Period(type: activePeriod.type, from: buckets.first.from, to: buckets.last.to),
+      workerId:  workerId,
+      serviceId: serviceId,
+    );
+    final docs = allDocs;
 
     String bucketKey(Period b) =>
         '${b.from.year}-${b.from.month.toString().padLeft(2, '0')}-${b.from.day.toString().padLeft(2, '0')}';

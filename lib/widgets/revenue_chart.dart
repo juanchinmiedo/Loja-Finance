@@ -1,5 +1,5 @@
 // lib/widgets/revenue_chart.dart
-// COMMIT 1 — remove onActiveWorkersChanged (base selector now lives in home_screen)
+// COMMIT 1 — tooltip: white bg, fitInside, barIndex label mapping (base selector now lives in home_screen)
 //            comparator only manages additional overlay lines
 //            para que los KPI cards se actualicen por worker
 
@@ -287,20 +287,32 @@ class _RevenueChartState extends State<RevenueChart> {
         touchCallback: (event, response) =>
             setState(() => _touchedIndex = response?.lineBarSpots?.first.spotIndex),
         touchTooltipData: LineTouchTooltipData(
-          getTooltipColor: (_) => const Color(0xFF202124),
+          // FIX: white background, constrained width, never overflows screen
+          getTooltipColor:       (_) => Colors.white,
+          tooltipBorder:         BorderSide(color: const Color(0xFFE8EAED)),
+          tooltipRoundedRadius:  8,
+          maxContentWidth:       160,
+          fitInsideHorizontally: true,
+          fitInsideVertically:   true,
           getTooltipItems: (spots) => spots.asMap().entries.map((e) {
             final idx  = e.key;
             final spot = e.value;
             final pt   = basePts[spot.spotIndex];
-            final label = idx == 0 ? 'Total'
-                : (idx - 1 < _activeSeries.length
-                    ? _activeSeries.values.toList()[idx - 1].label : '');
+            // FIX: use barIndex to reliably map spot → series label
+            // barIndex 0 = base series, 1..n = _activeSeries in insertion order
+            final seriesList = _activeSeries.values.toList();
+            final label = spot.barIndex == 0
+                ? 'Total'
+                : (spot.barIndex - 1 < seriesList.length
+                    ? seriesList[spot.barIndex - 1].label
+                    : '');
             return LineTooltipItem(
               idx == 0 ? '${_formatTooltipDate(pt.month)}\n' : '',
-              GoogleFonts.nunito(color: Colors.white70, fontSize: 10),
+              GoogleFonts.nunito(color: const Color(0xFF80868B), fontSize: 10),
               children: [TextSpan(
                 text: '$label  €${spot.y.toStringAsFixed(0)}\n',
-                style: GoogleFonts.nunito(color: spot.bar.color, fontSize: 12, fontWeight: FontWeight.w700),
+                style: GoogleFonts.nunito(
+                    color: spot.bar.color, fontSize: 12, fontWeight: FontWeight.w700),
               )],
             );
           }).toList(),

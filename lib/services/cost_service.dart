@@ -1,4 +1,5 @@
 // lib/services/cost_service.dart
+// COMMIT 3 — fetchAllCosts tolerant of permission errors
 //
 // Lee y escribe la colección `service_costs/{serviceId}`.
 // Solo el dueño (admin) puede escribir. Los workers solo leen.
@@ -26,11 +27,17 @@ class CostService {
   // ── Leer todos los costes registrados ─────────────────────────────────────
 
   Future<Map<String, ServiceCost>> fetchAllCosts() async {
-    final snap = await _db.collection(_costsCollection).get();
-    return {
-      for (final doc in snap.docs)
-        doc.id: ServiceCost.fromMap(doc.id, doc.data()),
-    };
+    // Tolerant: if service_costs collection is missing or has no read permissions,
+    // return empty map — services will show with 0 material cost
+    try {
+      final snap = await _db.collection(_costsCollection).get();
+      return {
+        for (final doc in snap.docs)
+          doc.id: ServiceCost.fromMap(doc.id, doc.data()),
+      };
+    } catch (_) {
+      return {};
+    }
   }
 
   // ── Stats de servicios para el período con costes aplicados ───────────────

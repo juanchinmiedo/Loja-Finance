@@ -1,4 +1,5 @@
 // lib/screens/services_screen.dart
+// COMMIT 3 — show errors, retry button
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -25,6 +26,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
   final _authService = AuthService();
 
   List<ServiceStats>? _services;
+  String? _error;
   bool _loading = true;
   bool _isAdmin = false;
   String? _lastPeriodKey;
@@ -52,13 +54,13 @@ class _ServicesScreenState extends State<ServicesScreen> {
   }
 
   Future<void> _load() async {
-    setState(() => _loading = true);
+    setState(() { _loading = true; _error = null; });
     try {
       final period   = context.read<PeriodProvider>().current;
       final services = await _costService.fetchServiceStats(period);
       if (mounted) setState(() { _services = services; _loading = false; });
-    } catch (_) {
-      if (mounted) setState(() => _loading = false);
+    } catch (e) {
+      if (mounted) setState(() { _loading = false; _error = e.toString(); });
     }
   }
 
@@ -82,6 +84,8 @@ class _ServicesScreenState extends State<ServicesScreen> {
               child: Center(child: CircularProgressIndicator(
                   color: Color(0xFF4285F4), strokeWidth: 2)),
             )
+          else if (_error != null)
+            _buildError(_error!)
           else if (_services == null || _services!.isEmpty)
             _buildEmpty(l10n)
           else ...[
@@ -269,6 +273,27 @@ class _ServicesScreenState extends State<ServicesScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildError(String error) {
+    return Center(child: Padding(
+      padding: const EdgeInsets.only(top: 60),
+      child: Column(children: [
+        const Icon(Icons.error_outline, size: 48, color: Color(0xFFEA4335)),
+        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Text('Error al cargar servicios',
+              style: GoogleFonts.nunito(fontSize: 14, color: const Color(0xFF80868B)),
+              textAlign: TextAlign.center),
+        ),
+        const SizedBox(height: 8),
+        TextButton(
+          onPressed: _load,
+          child: Text('Reintentar', style: GoogleFonts.nunito(color: const Color(0xFF4285F4))),
+        ),
+      ]),
+    ));
   }
 
   Widget _buildEmpty(S l10n) {

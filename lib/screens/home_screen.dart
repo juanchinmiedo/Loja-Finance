@@ -1,5 +1,5 @@
 // lib/screens/home_screen.dart
-// COMMIT 1 — Base selector: Total salón / workers como fuente de KPIs y línea principal
+// COMMIT 2 — _fetchCompareSeries passes serviceId for service filter: Total salón / workers como fuente de KPIs y línea principal
 //            El comparador debajo de la gráfica sigue igual para líneas adicionales
 
 import 'package:firebase_auth/firebase_auth.dart';
@@ -249,7 +249,9 @@ class _DashboardTabState extends State<_DashboardTab> {
   // Callbacks para el comparador (líneas adicionales)
   Future<List<RevenuePoint>> _fetchCompareSeries(String id, String type) {
     final period = context.read<PeriodProvider>().current;
-    if (type == 'worker') return _financeService.fetchChartPoints(period, workerId: id);
+    if (type == 'worker')  return _financeService.fetchChartPoints(period, workerId: id);
+    if (type == 'service') return _financeService.fetchChartPoints(period, serviceId: id);
+    // type == 'period': id encodes a custom period range, handled via onFetchPeriodSeries
     return _financeService.fetchChartPoints(period);
   }
 
