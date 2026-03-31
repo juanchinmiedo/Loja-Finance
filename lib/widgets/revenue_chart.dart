@@ -356,7 +356,8 @@ class _RevenueChartState extends State<RevenueChart> {
   LineChartBarData _buildBar(List<RevenuePoint> pts, Color color) {
     return LineChartBarData(
       spots: pts.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value.revenue)).toList(),
-      isCurved: true, curveSmoothness: 0.35,
+      isCurved: true, curveSmoothness: 0.3,
+      preventCurveOverShooting: true,
       color: color, barWidth: 2.5, isStrokeCapRound: true,
       dotData: FlDotData(
         show: true,
